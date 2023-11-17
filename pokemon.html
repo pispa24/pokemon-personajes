@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokémon Cards</title>
+    <style>
+        /* Estilos para la tarjeta del Pokémon */
+        .container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #c92a2a; /* Rojo Granate */
+        }
+
+        .horizontal-cards {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        .card {
+            width: 250px;
+            border-radius: 10px;
+            padding: 15px;
+            color: #fff; /* Texto blanco para destacar */
+            font-family: 'Arial', sans-serif;
+            margin: 20px;
+        }
+
+        .pokemon-card {
+            border: 2px solid #000;
+            background-color: #009688; /* Verde */
+        }
+
+        .evolution-card {
+            border: 2px solid #000;
+            background-color: #673ab7; /* Púrpura */
+        }
+
+        .card img {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            border: 2px solid #fff; /* Borde blanco */
+            margin-bottom: 10px;
+        }
+
+        h3 {
+            margin: 10px 0;
+            font-size: 24px;
+            text-transform: capitalize;
+        }
+
+        p {
+            margin: 5px 0;
+            font-size: 16px;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background-color: #4CAF50; /* Verde */
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #45a049; /* Verde más oscuro al pasar el ratón */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Contenedor para las tarjetas -->
+        <div class="horizontal-cards">
+            <!-- Tarjeta del Pokémon -->
+            <div class="card pokemon-card" id="pokemonCard">
+                <img id="pokemonImage" src="" alt="Pokémon">
+                <h3 id="pokemonName"></h3>
+                <div id="pokemonDetails">
+                    <p id="pokemonAbilities"></p>
+                    <p id="pokemonSuperMoves"></p> <!-- Superataques -->
+                    <p id="pokemonStats"></p>
+                    <p id="pokemonTypes"></p>
+                    <p id="pokemonLegendary"></p>
+                </div>
+            </div>
+
+            <!-- Tarjeta de la Evolución -->
+            <div class="card evolution-card" id="evolutionCard">
+                <img id="evolutionImage" src="" alt="Evolución">
+                <h3 id="evolutionName"></h3>
+                <div id="evolutionDetails">
+                    <!-- Detalles de la evolución -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Botón para mostrar información -->
+        <div class="button-container">
+            <button onclick="getPokemonInfo()">Mostrar Pokémon</button>
+        </div>
+    </div>
+
+    <script>
+        const getRandomPokemonId = () => {
+            return Math.floor(Math.random() * 898) + 1; // Genera un número aleatorio entre 1 y 898 (cantidad de Pokémon en la PokeAPI)
+        };
+
+        const getPokemonInfo = async () => {
+            try {
+                const randomPokemonId = getRandomPokemonId();
+                const pokemonResponse = await fetch(`https://pokeapi.co/api/v2/pokemon/${randomPokemonId}`);
+                const pokemonData = await pokemonResponse.json();
+
+                // Mostrar información del Pokémon en la tarjeta principal
+                document.getElementById('pokemonImage').src = pokemonData.sprites.other['official-artwork'].front_default;
+                document.getElementById('pokemonName').textContent = pokemonData.name;
+
+                // Obtener información de habilidades
+                const abilities = pokemonData.abilities.map(ability => ability.ability.name).join(', ');
+                document.getElementById('pokemonAbilities').textContent = `Abilities: ${abilities}`;
+
+                // Obtener algunos movimientos (superataques)
+                const moves = pokemonData.moves.slice(0, 5).map(move => move.move.name).join(', ');
+                document.getElementById('pokemonSuperMoves').textContent = `Super Moves: ${moves}`;
+
+                // Obtener estadísticas
+                const stats = pokemonData.stats.map(stat => `${stat.stat.name}: ${stat.base_stat}`).join(', ');
+                document.getElementById('pokemonStats').textContent = `Stats: ${stats}`;
+
+                // Obtener tipos
+                const types = pokemonData.types.map(type => type.type.name).join(', ');
+                document.getElementById('pokemonTypes').textContent = `Types: ${types}`;
+
+                // Verificar si es legendario
+                const isLegendary = pokemonData.is_legendary ? 'Yes' : 'No';
+                document.getElementById('pokemonLegendary').textContent = `Legendary: ${isLegendary}`;
+
+                // Obtener información de evolución
+                const speciesResponse = await fetch(pokemonData.species.url);
+                const speciesData = await speciesResponse.json();
+                const evolutionChainResponse = await fetch(speciesData.evolution_chain.url);
+                const evolutionChainData = await evolutionChainResponse.json();
+
+                // Procesar la cadena de evolución
+                const evolutionChain = [];
+                evolutionChain.push(evolutionChainData.chain);
+
+                while (evolutionChain[evolutionChain.length - 1].evolves_to.length > 0) {
+                    evolutionChain.push(evolutionChain[evolutionChain.length - 1].evolves_to[0]);
+                }
+
+                // Mostrar detalles de la evolución en la tarjeta de evolución
+                if (evolutionChain.length > 1) {
+                    const evolutionId = evolutionChain[1].species.name;
+                    const evolutionResponse = await fetch(`https://pokeapi.co/api/v2/pokemon/${evolutionId}`);
+                    const evolutionData = await evolutionResponse.json();
+
+                    // Mostrar información de la evolución en la tarjeta secundaria
+                    document.getElementById('evolutionImage').src = evolutionData.sprites.other['official-artwork'].front_default;
+                    document.getElementById('evolutionName').textContent = evolutionData.name;
+                    // Puedes continuar agregando más detalles de la evolución aquí si están disponibles
+                } else {
+                    // Si no hay evolución disponible, puedes mostrar un mensaje indicando esto
+                    document.getElementById('evolutionName').textContent = "No Evolution";
+                    document.getElementById('evolutionDetails').classList.add('no-evolution'); // Agregar estilo distintivo
+                    // O cualquier otro manejo que desees hacer
+                }
+
+            } catch (error) {
+                console.log("¡Hubo un error al obtener la información del Pokémon!", error);
+            }
+        };
+
+        // Llamada inicial para mostrar un Pokémon al cargar la página
+        getPokemonInfo();
+    </script>
+</body>
+</html>
+
+
+
